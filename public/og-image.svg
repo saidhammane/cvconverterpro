@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e0f2fe" />
+      <stop offset="100%" stop-color="#f8fafc" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect x="120" y="120" width="960" height="390" rx="40" fill="#ffffff" stroke="#cbd5e1" stroke-width="4" />
+  <text x="170" y="245" fill="#0f172a" font-family="Arial, sans-serif" font-size="72" font-weight="700">
+    CVConverterPro
+  </text>
+  <text x="170" y="330" fill="#475569" font-family="Arial, sans-serif" font-size="34">
+    Convert your CV for any country
+  </text>
+  <text x="170" y="410" fill="#0284c7" font-family="Arial, sans-serif" font-size="28" font-weight="700">
+    Canada • Germany • Australia • USA • UK • France
+  </text>
+</svg>
