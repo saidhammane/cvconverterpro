@@ -6,7 +6,14 @@ import {
   convertedCvSchema,
   convertedCvSchemaName,
 } from "@/lib/converted-cv-schema";
-import type { ConvertedCvData, CountryRule, CountryValue, StructuredCvData } from "@/lib/convert";
+import {
+  getOutputLanguageLabel,
+  type ConvertedCvData,
+  type CountryRule,
+  type CountryValue,
+  type OutputLanguageValue,
+  type StructuredCvData
+} from "@/lib/convert";
 import { normalizeConvertedCv } from "@/lib/normalize-converted-cv";
 
 const OPENAI_CV_MODEL = "gpt-4.1";
@@ -16,6 +23,7 @@ interface ConvertWithOpenAIInput {
   rawText: string;
   countryRules: CountryRule;
   targetCountry: CountryValue;
+  outputLanguage: OutputLanguageValue;
 }
 
 interface ConvertWithOpenAIResult {
@@ -61,7 +69,12 @@ function getOpenAIClient(): OpenAI {
   return cachedClient;
 }
 
-function buildSystemPrompt(targetCountry: CountryValue, countryRules: CountryRule): string {
+function buildSystemPrompt(
+  targetCountry: CountryValue,
+  outputLanguage: OutputLanguageValue,
+  countryRules: CountryRule
+): string {
+  const outputLanguageLabel = getOutputLanguageLabel(outputLanguage);
   const canadaSpecificInstruction =
     targetCountry === "canada"
       ? [
@@ -77,6 +90,11 @@ function buildSystemPrompt(targetCountry: CountryValue, countryRules: CountryRul
   return [
     "You are CVConverterPro, an expert resume and CV rewriting assistant.",
     `Rewrite the candidate's source CV for ${countryRules.label} (${targetCountry}).`,
+    `The final converted CV must be written entirely in ${outputLanguageLabel}.`,
+    outputLanguage === "english"
+      ? "Produce natural, professional English throughout the final CV."
+      : "Produce natural, professional French throughout the final CV.",
+    "Do not mix languages anywhere in the final output.",
     "Follow the supplied country rules closely.",
     "Keep the output truthful to the source material.",
     "Do not invent companies, job titles, dates, achievements, credentials, employers, or skills.",
@@ -95,10 +113,13 @@ function buildSystemPrompt(targetCountry: CountryValue, countryRules: CountryRul
 function buildUserPrompt({
   structuredCv,
   rawText,
-  countryRules
+  countryRules,
+  outputLanguage
 }: ConvertWithOpenAIInput): string {
   // Future prompt construction can combine this with job-specific requirements.
   return [
+    `Requested output language: ${getOutputLanguageLabel(outputLanguage)}`,
+    "",
     "Target country rules:",
     JSON.stringify(countryRules, null, 2),
     "",
@@ -120,6 +141,8 @@ function buildUserPrompt({
     "- use consistent date formatting and use Present for ongoing roles when appropriate.",
     "- education: concise, factual education entries with consistent date formatting where dates are present.",
     "- skills: relevant skill keywords grounded in the source CV.",
+    `- write every heading, sentence, bullet, and label in ${getOutputLanguageLabel(outputLanguage)} only.`,
+    "- keep the final CV ATS-friendly and professionally readable in the requested language.",
     "- do not repeat contact information in the headline, summary, or section content.",
     "- extraSections: only include truthful sections such as Projects, Certifications, or Languages when supported by the source text."
   ].join("\n");
@@ -166,7 +189,11 @@ async function requestStructuredConversion(
   try {
     const response = await client.responses.parse({
       model: OPENAI_CV_MODEL,
-      instructions: buildSystemPrompt(input.targetCountry, input.countryRules),
+      instructions: buildSystemPrompt(
+        input.targetCountry,
+        input.outputLanguage,
+        input.countryRules
+      ),
       input: buildUserPrompt(input),
       text: {
         format: zodTextFormat(convertedCvSchema, convertedCvSchemaName, {

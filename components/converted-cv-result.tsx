@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ConvertedCvPreview } from "@/components/converted-cv-preview";
-import type { ConvertApiSuccess, CountryValue } from "@/lib/convert";
+import type { ConvertApiSuccess, CountryValue, OutputLanguageValue } from "@/lib/convert";
 
 function formatExtraSectionsPreview(extraSections: ConvertApiSuccess["convertedCv"]["extraSections"]): string {
   const titles = extraSections.slice(0, 3).map((section) => section.title);
@@ -22,13 +22,18 @@ function sanitizeFilenamePart(value: string): string {
     .slice(0, 40);
 }
 
-function buildPdfFileName(country: CountryValue, candidateName: string): string {
+function buildPdfFileName(
+  country: CountryValue,
+  outputLanguage: OutputLanguageValue,
+  candidateName: string
+): string {
   const countryPart = sanitizeFilenamePart(country) || "country";
+  const languagePart = sanitizeFilenamePart(outputLanguage) || "language";
   const namePart = sanitizeFilenamePart(candidateName);
 
   return namePart.length > 0
-    ? `cvconverterpro-${countryPart}-${namePart}-converted-cv.pdf`
-    : `cvconverterpro-${countryPart}-converted-cv.pdf`;
+    ? `cvconverterpro-${countryPart}-${languagePart}-${namePart}-converted-cv.pdf`
+    : `cvconverterpro-${countryPart}-${languagePart}-converted-cv.pdf`;
 }
 
 interface ConvertedCvResultProps {
@@ -56,6 +61,7 @@ export function ConvertedCvResult({ result }: ConvertedCvResultProps) {
         <ConvertedCvPdfDocument
           convertedCv={convertedCv}
           countryLabel={result.countryLabel}
+          outputLanguageLabel={result.outputLanguageLabel}
         />
       ).toBlob();
 
@@ -67,7 +73,11 @@ export function ConvertedCvResult({ result }: ConvertedCvResultProps) {
       const link = document.createElement("a");
 
       link.href = objectUrl;
-      link.download = buildPdfFileName(result.country, convertedCv.name);
+      link.download = buildPdfFileName(
+        result.country,
+        result.outputLanguage,
+        convertedCv.name
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -87,10 +97,14 @@ export function ConvertedCvResult({ result }: ConvertedCvResultProps) {
     >
       <p className="text-sm font-medium text-emerald-800">{result.message}</p>
 
-      <div className="mt-3 grid gap-3 text-sm text-emerald-900 sm:grid-cols-2">
+      <div className="mt-3 grid gap-3 text-sm text-emerald-900 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-2xl bg-white/70 px-4 py-3">
           <p className="font-semibold">Target country</p>
           <p className="mt-1">{result.countryLabel}</p>
+        </div>
+        <div className="rounded-2xl bg-white/70 px-4 py-3">
+          <p className="font-semibold">Output language</p>
+          <p className="mt-1">{result.outputLanguageLabel}</p>
         </div>
         <div className="rounded-2xl bg-white/70 px-4 py-3">
           <p className="font-semibold">Conversion status</p>
@@ -104,6 +118,12 @@ export function ConvertedCvResult({ result }: ConvertedCvResultProps) {
           <p className="font-semibold">Extracted characters</p>
           <p className="mt-1">{result.extractedCharacterCount}</p>
         </div>
+        {result.sourceLanguage ? (
+          <div className="rounded-2xl bg-white/70 px-4 py-3">
+            <p className="font-semibold">Source language</p>
+            <p className="mt-1">{result.sourceLanguage}</p>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-3 rounded-2xl bg-white/70 px-4 py-4 text-sm text-emerald-950">
@@ -111,7 +131,7 @@ export function ConvertedCvResult({ result }: ConvertedCvResultProps) {
           <div>
             <p className="font-semibold">Converted CV preview</p>
             <p className="mt-1 text-sm text-emerald-800">
-              Cleaned for rendering and export with deduplicated contact details and normalized text.
+              Cleaned for rendering and export with deduplicated contact details, normalized text, and a final {result.outputLanguageLabel.toLowerCase()} output.
             </p>
           </div>
           <button

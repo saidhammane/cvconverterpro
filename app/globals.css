@@ -4,6 +4,13 @@
 
 :root {
   color-scheme: light;
+  --page-background: #f5f3eb;
+  --page-foreground: #0f1720;
+  --brand-mint: #4fd1a5;
+  --brand-cyan: #7dd3fc;
+  --brand-ink: #08111f;
+  --font-body: "Manrope", sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
 }
 
 html {
@@ -11,17 +18,45 @@ html {
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  min-height: 100vh;
+  color: var(--page-foreground);
+  font-family: var(--font-body), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--page-background);
   background-image:
-    radial-gradient(circle at top, rgba(191, 219, 254, 0.35), transparent 40%),
-    linear-gradient(to bottom, #f8fafc, #f8fafc);
+    radial-gradient(circle at 12% 8%, rgba(79, 209, 165, 0.14), transparent 24%),
+    radial-gradient(circle at 88% 12%, rgba(125, 211, 252, 0.16), transparent 26%),
+    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.8), transparent 32%),
+    linear-gradient(180deg, #fbfaf6 0%, #f5f3eb 46%, #efede7 100%);
 }
 
 a,
 button {
-  @apply transition-colors duration-200;
+  transition-duration: 220ms;
+  transition-property: color, background-color, border-color, opacity, transform, box-shadow;
 }
 
 ::selection {
-  @apply bg-sky-200 text-slate-900;
+  background: rgba(79, 209, 165, 0.3);
+  color: #0f1720;
+}
+
+.font-display {
+  font-family: var(--font-display), sans-serif;
+}
+
+.surface-grid {
+  background-image:
+    linear-gradient(rgba(15, 23, 32, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 32, 0.05) 1px, transparent 1px);
+  background-position: center;
+  background-size: 24px 24px;
+}
+
+.dark-surface-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-position: center;
+  background-size: 28px 28px;
 }

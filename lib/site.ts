@@ -9,13 +9,14 @@ export const siteConfig = {
 } as const;
 
 export const navigationLinks = [
-  { href: "/", label: "Home" },
+  { href: "/#how-it-works", label: "How it works" },
+  { href: "/#features", label: "Features" },
+  { href: "/#supported-countries", label: "Countries" },
   { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
-  { href: "/privacy-policy", label: "Privacy" }
 ];
 
 export const footerLinks = [
+  { href: "/convert", label: "Convert" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/privacy-policy", label: "Privacy Policy" }

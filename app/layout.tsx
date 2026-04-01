@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { siteConfig } from "@/lib/site";
 
-const inter = Inter({
+const manrope = Manrope({
   subsets: ["latin"],
-  display: "swap"
+  display: "swap",
+  variable: "--font-body"
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-display"
 });
 
 export const metadata: Metadata = {
@@ -57,7 +64,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${manrope.variable} ${spaceGrotesk.variable}`}>
         <div className="flex min-h-screen flex-col">
           <Header />
           <main className="flex-1">{children}</main>

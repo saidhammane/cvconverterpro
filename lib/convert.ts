@@ -31,6 +31,23 @@ export const countryOptions: ReadonlyArray<{ value: CountryValue; label: string 
     label: countryLabels[value]
   }));
 
+export const supportedOutputLanguageValues = ["english", "french"] as const;
+
+export type OutputLanguageValue = (typeof supportedOutputLanguageValues)[number];
+
+export const outputLanguageLabels: Record<OutputLanguageValue, string> = {
+  english: "English",
+  french: "French"
+};
+
+export const outputLanguageOptions: ReadonlyArray<{
+  value: OutputLanguageValue;
+  label: string;
+}> = supportedOutputLanguageValues.map((value) => ({
+  value,
+  label: outputLanguageLabels[value]
+}));
+
 export const MAX_FILE_SIZE_MB = 5;
 export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
@@ -121,12 +138,17 @@ export interface ConvertApiDebug {
   structuredOutputSchema: string;
   extractedText: string;
   countryRulesUsed: CountryRule;
+  outputLanguageUsed: OutputLanguageValue;
+  sourceLanguage: string | null;
 }
 
 export interface ConvertApiSuccess {
   success: true;
   country: CountryValue;
   countryLabel: string;
+  outputLanguage: OutputLanguageValue;
+  outputLanguageLabel: string;
+  sourceLanguage: string | null;
   originalFileName: string;
   detectedMimeType: string;
   maxFileSizeMb: number;
@@ -161,6 +183,14 @@ export function isSupportedCountry(value: string): value is CountryValue {
 
 export function getCountryLabel(country: CountryValue): string {
   return countryLabels[country];
+}
+
+export function isSupportedOutputLanguage(value: string): value is OutputLanguageValue {
+  return supportedOutputLanguageValues.some((language) => language === value);
+}
+
+export function getOutputLanguageLabel(outputLanguage: OutputLanguageValue): string {
+  return outputLanguageLabels[outputLanguage];
 }
 
 export function detectMimeType(file: FileLike): string {

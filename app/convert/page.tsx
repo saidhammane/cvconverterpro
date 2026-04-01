@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { ConvertForm } from "@/components/convert-form";
-import { countryOptions } from "@/lib/convert";
+import { countryOptions, outputLanguageOptions } from "@/lib/convert";
 import { buildMetadata } from "@/lib/site";
 
 export const metadata: Metadata = buildMetadata(
   "Convert Your CV",
-  "Upload your resume or CV, choose a target country, and convert it into a country-ready draft for Canada, Germany, Australia, the USA, the UK, and France.",
+  "Upload your resume or CV, choose a target country and output language, and convert it into a country-ready draft for Canada, Germany, Australia, the USA, the UK, and France.",
   "/convert"
 );
 
@@ -21,8 +21,8 @@ export default function ConvertPage() {
             Convert your CV
           </h1>
           <p className="mt-5 text-lg leading-8 text-slate-600">
-            Upload a PDF or DOCX resume, choose your target country, and generate a
-            cleaner country-ready CV draft built for the format you need.
+            Upload a PDF or DOCX resume, choose your target country and output language,
+            and generate a cleaner country-ready CV draft built for the format you need.
           </p>
         </div>
 
@@ -39,7 +39,7 @@ export default function ConvertPage() {
             <p className="mt-4 text-sm leading-7 text-slate-600">
               The backend now validates uploads, extracts resume text, maps likely CV
               sections, and generates an OpenAI-powered draft tailored to the selected
-              country format.
+              country format and final output language.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -49,6 +49,17 @@ export default function ConvertPage() {
                   className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700"
                 >
                   {country.label}
+                </span>
+              ))}
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              {outputLanguageOptions.map((language) => (
+                <span
+                  key={language.value}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700"
+                >
+                  {language.label}
                 </span>
               ))}
             </div>

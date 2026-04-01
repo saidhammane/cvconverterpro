@@ -93,6 +93,7 @@ const styles = StyleSheet.create({
 interface ConvertedCvPdfDocumentProps {
   convertedCv: ConvertedCvData;
   countryLabel: string;
+  outputLanguageLabel: string;
 }
 
 function PdfSection({
@@ -201,7 +202,8 @@ function PdfExperienceSection({
 
 export function ConvertedCvPdfDocument({
   convertedCv,
-  countryLabel
+  countryLabel,
+  outputLanguageLabel
 }: ConvertedCvPdfDocumentProps) {
   const contactItems = convertedCv.contactLineItems;
 
@@ -209,8 +211,8 @@ export function ConvertedCvPdfDocument({
     <Document
       author="CVConverterPro"
       creator="CVConverterPro"
-      title={`${convertedCv.name || "Converted CV"} - ${countryLabel}`}
-      subject={`Country-adapted CV for ${countryLabel}`}
+      title={`${convertedCv.name || "Converted CV"} - ${countryLabel} - ${outputLanguageLabel}`}
+      subject={`Country-adapted CV for ${countryLabel} in ${outputLanguageLabel}`}
     >
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>

@@ -6,11 +6,14 @@ import { mapCvSections } from "@/lib/map-cv-sections";
 import {
   MAX_FILE_SIZE_MB,
   getCountryLabel,
+  getOutputLanguageLabel,
   isSupportedCountry,
+  isSupportedOutputLanguage,
   type ConvertApiError,
   type ConvertApiSuccess,
   type CountryValue,
   type FileLike,
+  type OutputLanguageValue,
   validateResumeFile
 } from "@/lib/convert";
 
@@ -40,9 +43,14 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const fileEntry = formData.get("file");
     const countryEntry = formData.get("country");
+    const outputLanguageEntry = formData.get("outputLanguage");
     const file = fileEntry instanceof File ? fileEntry : null;
     const country =
       typeof countryEntry === "string" ? countryEntry.trim().toLowerCase() : "";
+    const outputLanguage =
+      typeof outputLanguageEntry === "string"
+        ? outputLanguageEntry.trim().toLowerCase()
+        : "";
     const validationErrors: string[] = [];
 
     if (!file) {
@@ -51,6 +59,10 @@ export async function POST(request: Request) {
 
     if (!country) {
       validationErrors.push("A target country is required.");
+    }
+
+    if (!outputLanguage) {
+      validationErrors.push("An output language is required.");
     }
 
     if (file) {
@@ -67,15 +79,19 @@ export async function POST(request: Request) {
       validationErrors.push("Please select one of the supported countries.");
     }
 
+    if (outputLanguage && !isSupportedOutputLanguage(outputLanguage)) {
+      validationErrors.push("Please choose English or French as the output language.");
+    }
+
     if (validationErrors.length > 0) {
       return jsonError(
-        "We could not start the conversion flow. Please review your file and country selection.",
+        "We could not start the conversion flow. Please review your file, country, and output language selection.",
         400,
         Array.from(new Set(validationErrors))
       );
     }
 
-    if (!file || !isSupportedCountry(country)) {
+    if (!file || !isSupportedCountry(country) || !isSupportedOutputLanguage(outputLanguage)) {
       return jsonError(
         "The conversion request could not be prepared from the submitted data.",
         400
@@ -83,6 +99,7 @@ export async function POST(request: Request) {
     }
 
     const typedCountry: CountryValue = country;
+    const typedOutputLanguage: OutputLanguageValue = outputLanguage;
     const rules = countryRules[typedCountry];
     const fileBuffer = Buffer.from(await file.arrayBuffer());
 
@@ -96,13 +113,17 @@ export async function POST(request: Request) {
       structuredCv,
       rawText: extractionResult.text,
       countryRules: rules,
-      targetCountry: typedCountry
+      targetCountry: typedCountry,
+      outputLanguage: typedOutputLanguage
     });
 
     const responseBody: ConvertApiSuccess = {
       success: true,
       country: typedCountry,
       countryLabel: getCountryLabel(typedCountry),
+      outputLanguage: typedOutputLanguage,
+      outputLanguageLabel: getOutputLanguageLabel(typedOutputLanguage),
+      sourceLanguage: null,
       originalFileName: file.name,
       detectedMimeType: extractionResult.mimeType,
       maxFileSizeMb: MAX_FILE_SIZE_MB,
@@ -114,7 +135,7 @@ export async function POST(request: Request) {
       convertedCv: conversionResult.convertedCv,
       message: `Your ${rules.documentStyle.preferredDocumentName.toLowerCase()} draft was converted for ${getCountryLabel(
         typedCountry
-      )}. Review the cleaned preview below or export it as a PDF.`,
+      )} in ${getOutputLanguageLabel(typedOutputLanguage)}. Review the cleaned preview below or export it as a PDF.`,
       debug:
         process.env.NODE_ENV !== "production"
           ? {
@@ -122,7 +143,9 @@ export async function POST(request: Request) {
               structuredOutputMode: "responses.parse+zod",
               structuredOutputSchema: conversionResult.structuredOutputSchema,
               extractedText: extractionResult.text,
-              countryRulesUsed: rules
+              countryRulesUsed: rules,
+              outputLanguageUsed: typedOutputLanguage,
+              sourceLanguage: null
             }
           : undefined
     };
