@@ -5,7 +5,7 @@ import { buildMetadata } from "@/lib/site";
 
 export const metadata: Metadata = buildMetadata(
   "Convert Your CV",
-  "Upload your resume or CV, choose a target country, and prepare it for country-specific formatting across Canada, Germany, Australia, the USA, the UK, and France.",
+  "Upload your resume or CV, choose a target country, and convert it into a country-ready draft for Canada, Germany, Australia, the USA, the UK, and France.",
   "/convert"
 );
 
@@ -21,8 +21,8 @@ export default function ConvertPage() {
             Convert your CV
           </h1>
           <p className="mt-5 text-lg leading-8 text-slate-600">
-            Upload a PDF or DOCX resume, choose your target country, and get the conversion
-            flow ready for the format you need.
+            Upload a PDF or DOCX resume, choose your target country, and generate a
+            cleaner country-ready CV draft built for the format you need.
           </p>
         </div>
 
@@ -37,8 +37,9 @@ export default function ConvertPage() {
               Start with country-ready resume targets
             </h2>
             <p className="mt-4 text-sm leading-7 text-slate-600">
-              The backend now validates uploads, extracts resume text, and maps likely CV
-              sections into a structured contract for the next phase.
+              The backend now validates uploads, extracts resume text, maps likely CV
+              sections, and generates an OpenAI-powered draft tailored to the selected
+              country format.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -56,8 +57,8 @@ export default function ConvertPage() {
               <h3 className="text-base font-semibold text-slate-950">What is ready now</h3>
               <p className="mt-3 text-sm leading-7 text-slate-600">
                 Client-side validation, API submission, backend input checks, text
-                extraction, heuristic section mapping, and a clean handoff point for AI
-                prompt construction.
+                extraction, heuristic section mapping, and AI-assisted draft conversion for
+                supported countries.
               </p>
             </div>
           </aside>

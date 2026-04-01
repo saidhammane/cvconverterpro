@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { AiConversionError, convertCvWithOpenAI } from "@/lib/ai-convert";
 import { countryRules } from "@/lib/country-rules";
 import { TextExtractionError, extractTextFromResume } from "@/lib/extract-text";
 import { mapCvSections } from "@/lib/map-cv-sections";
@@ -8,7 +9,6 @@ import {
   isSupportedCountry,
   type ConvertApiError,
   type ConvertApiSuccess,
-  type ConvertPreviewSection,
   type CountryValue,
   type FileLike,
   validateResumeFile
@@ -33,14 +33,6 @@ function jsonError(
     },
     { status }
   );
-}
-
-function buildPendingSection(note: string): ConvertPreviewSection {
-  return {
-    status: "pending",
-    note,
-    items: []
-  };
 }
 
 export async function POST(request: Request) {
@@ -92,24 +84,21 @@ export async function POST(request: Request) {
 
     const typedCountry: CountryValue = country;
     const rules = countryRules[typedCountry];
-    const normalizedFile: FileLike = {
-      name: file.name,
-      size: file.size,
-      type: file.type
-    };
     const fileBuffer = Buffer.from(await file.arrayBuffer());
 
-    // Future step: map extracted raw text into structured CV fields before prompt creation.
     const extractionResult = await extractTextFromResume({
       fileName: file.name,
       mimeType: file.type,
       buffer: fileBuffer
     });
     const structuredCv = mapCvSections(extractionResult.text);
+    const conversionResult = await convertCvWithOpenAI({
+      structuredCv,
+      rawText: extractionResult.text,
+      countryRules: rules,
+      targetCountry: typedCountry
+    });
 
-    // Future step: build an AI prompt from extracted text, mapped CV data, and country rules.
-    // Future step: apply country-specific rewriting to the mapped sections below.
-    // Future step: replace the placeholder preview below with shaped conversion output.
     const responseBody: ConvertApiSuccess = {
       success: true,
       country: typedCountry,
@@ -117,32 +106,25 @@ export async function POST(request: Request) {
       originalFileName: file.name,
       detectedMimeType: extractionResult.mimeType,
       maxFileSizeMb: MAX_FILE_SIZE_MB,
-      conversionStatus: "cv_mapped_ready",
+      conversionStatus: "completed",
       extractionStatus: extractionResult.status,
-      extractedText: extractionResult.text,
       extractedTextPreview: extractionResult.preview,
       extractedCharacterCount: extractionResult.characterCount,
       structuredCv,
-      message:
-        "Your file passed validation, text extraction, and heuristic CV structuring. The AI conversion step can plug into this contract next.",
-      resultPreview: {
-        summary: buildPendingSection(
-          "Professional summary rewriting can use the mapped profile fields and raw extracted text next."
-        ),
-        experience: buildPendingSection(
-          "Experience bullets can now be rewritten from the mapped work history structure."
-        ),
-        education: buildPendingSection(
-          "Education normalization can now build on the mapped education entries."
-        ),
-        skills: buildPendingSection(
-          "Skills grouping and localization can now build on the heuristic section mapping."
-        ),
-        extraSections: buildPendingSection(
-          "Languages, certifications, projects, and other extra sections will be added dynamically later."
-        ),
-        countryRulesUsed: rules
-      }
+      convertedCv: conversionResult.convertedCv,
+      message: `Your ${rules.documentStyle.preferredDocumentName.toLowerCase()} draft was converted for ${getCountryLabel(
+        typedCountry
+      )}. Review the cleaned preview below or export it as a PDF.`,
+      debug:
+        process.env.NODE_ENV !== "production"
+          ? {
+              aiModel: conversionResult.model,
+              structuredOutputMode: "responses.parse+zod",
+              structuredOutputSchema: conversionResult.structuredOutputSchema,
+              extractedText: extractionResult.text,
+              countryRulesUsed: rules
+            }
+          : undefined
     };
 
     return NextResponse.json<ConvertApiSuccess>(responseBody, { status: 200 });
@@ -151,10 +133,26 @@ export async function POST(request: Request) {
       return jsonError(error.publicMessage, 422, undefined, "EXTRACTION_ERROR");
     }
 
-    console.error("Convert API placeholder error:", error);
+    if (error instanceof AiConversionError) {
+      const status =
+        error.code === "MISSING_API_KEY"
+          ? 500
+          : error.code === "STRUCTURED_OUTPUT_REFUSAL"
+            ? 422
+            : 502;
+
+      return jsonError(
+        error.publicMessage,
+        status,
+        undefined,
+        "CONVERSION_ERROR"
+      );
+    }
+
+    console.error("Convert API error:", error);
 
     return jsonError(
-      "Something unexpected happened while preparing the conversion flow. Please try again.",
+      "Something unexpected happened while converting your CV. Please try again.",
       500,
       undefined,
       "SERVER_ERROR"

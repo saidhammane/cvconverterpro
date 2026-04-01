@@ -1,3 +1,10 @@
+import type {
+  ConvertedCvStructuredContact,
+  ConvertedCvStructuredExperience,
+  ConvertedCvStructuredExtraSection,
+  ConvertedCvStructuredOutput
+} from "@/lib/converted-cv-schema";
+
 export const supportedCountryValues = [
   "canada",
   "germany",
@@ -64,16 +71,11 @@ export interface CountryRule {
   specialNotes: string[];
 }
 
-export interface ConvertPreviewSection {
-  status: "pending";
-  note: string;
-  items: string[];
-}
-
 export type ConversionStatus =
   | "validated_placeholder"
   | "text_extracted_ready"
-  | "cv_mapped_ready";
+  | "cv_mapped_ready"
+  | "completed";
 export type ExtractionStatus = "completed";
 export type MappingStatus = "completed" | "partial" | "minimal";
 
@@ -105,12 +107,19 @@ export interface StructuredCvData {
   mappingWarnings: string[];
 }
 
-export interface ConvertResultPreview {
-  summary: ConvertPreviewSection;
-  experience: ConvertPreviewSection;
-  education: ConvertPreviewSection;
-  skills: ConvertPreviewSection;
-  extraSections: ConvertPreviewSection;
+export type ConvertedCvContact = ConvertedCvStructuredContact;
+export type ConvertedCvExperience = ConvertedCvStructuredExperience;
+export type ConvertedCvExtraSection = ConvertedCvStructuredExtraSection;
+
+export interface ConvertedCvData extends ConvertedCvStructuredOutput {
+  contactLineItems: string[];
+}
+
+export interface ConvertApiDebug {
+  aiModel: string;
+  structuredOutputMode: "responses.parse+zod";
+  structuredOutputSchema: string;
+  extractedText: string;
   countryRulesUsed: CountryRule;
 }
 
@@ -123,18 +132,22 @@ export interface ConvertApiSuccess {
   maxFileSizeMb: number;
   conversionStatus: ConversionStatus;
   extractionStatus: ExtractionStatus;
-  extractedText: string;
   extractedTextPreview: string;
   extractedCharacterCount: number;
   structuredCv: StructuredCvData;
+  convertedCv: ConvertedCvData;
   message: string;
-  resultPreview: ConvertResultPreview;
+  debug?: ConvertApiDebug;
 }
 
 export interface ConvertApiError {
   success: false;
   error: {
-    code: "VALIDATION_ERROR" | "EXTRACTION_ERROR" | "SERVER_ERROR";
+    code:
+      | "VALIDATION_ERROR"
+      | "EXTRACTION_ERROR"
+      | "CONVERSION_ERROR"
+      | "SERVER_ERROR";
     message: string;
     details?: string[];
   };

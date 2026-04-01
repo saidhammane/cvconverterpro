@@ -104,6 +104,10 @@ function isBlank(line: string): boolean {
   return line.trim().length === 0;
 }
 
+function isParserArtifactLine(line: string): boolean {
+  return /^--\s*\d+\s+of\s+\d+\s*--$/i.test(line) || /^page\s+\d+\s+of\s+\d+$/i.test(line);
+}
+
 function isLikelyContactLine(line: string): boolean {
   return (
     /@/.test(line) ||
@@ -191,6 +195,10 @@ function parseSectionBlocks(text: string): { preambleLines: string[]; blocks: Se
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
 
+    if (isParserArtifactLine(line)) {
+      continue;
+    }
+
     if (isBlank(line)) {
       if (currentBlock) {
         currentBlock.lines.push("");
@@ -250,6 +258,10 @@ function groupNonEmptyParagraphs(lines: string[]): string[][] {
   let currentGroup: string[] = [];
 
   for (const line of lines) {
+    if (isParserArtifactLine(line)) {
+      continue;
+    }
+
     if (isBlank(line)) {
       if (currentGroup.length > 0) {
         groups.push(currentGroup);
@@ -348,19 +360,26 @@ function extractFirstMatch(regex: RegExp, text: string): string | null {
 }
 
 function extractLocation(headerLines: string[], excludedLines: Set<string>): string | null {
-  for (const line of headerLines) {
-    if (excludedLines.has(line)) {
+  const fragments = uniqueStrings(
+    headerLines
+      .flatMap((line) => line.split(/[|•]/))
+      .map((fragment) => fragment.trim())
+      .filter(Boolean)
+  );
+
+  for (const candidate of fragments) {
+    if (excludedLines.has(candidate)) {
       continue;
     }
 
-    if (isLikelyContactLine(line) || line.length > 80) {
+    if (isLikelyContactLine(candidate) || candidate.length > 80) {
       continue;
     }
 
-    const wordCount = line.split(/\s+/).filter(Boolean).length;
+    const wordCount = candidate.split(/\s+/).filter(Boolean).length;
 
-    if (line.includes(",") || (wordCount >= 1 && wordCount <= 4)) {
-      return line;
+    if (candidate.includes(",") || (wordCount >= 1 && wordCount <= 4)) {
+      return candidate;
     }
   }
 
@@ -383,9 +402,8 @@ function isLikelyNameLine(line: string): boolean {
   return words.every((word) => /^[A-Za-z][A-Za-z'’.-]*$/.test(word));
 }
 
-function extractHeaderParagraph(preambleLines: string[]): string[] {
-  const paragraphs = groupNonEmptyParagraphs(preambleLines);
-  return paragraphs[0] ?? [];
+function extractHeaderLines(preambleLines: string[]): string[] {
+  return preambleLines.filter((line) => !isBlank(line) && !isParserArtifactLine(line)).slice(0, 6);
 }
 
 function inferHeadline(
@@ -556,7 +574,7 @@ function createEmptyStructuredCv(): StructuredCvData {
 export function mapCvSections(extractedText: string): StructuredCvData {
   try {
     const { preambleLines, blocks } = parseSectionBlocks(extractedText);
-    const headerLines = extractHeaderParagraph(preambleLines);
+    const headerLines = extractHeaderLines(preambleLines);
     const topBlockText = headerLines.join(" | ");
     const fullName = headerLines.find((line) => isLikelyNameLine(line)) ?? null;
     const excludedHeaderLines = new Set<string>();

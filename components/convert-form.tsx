@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { ConvertedCvResult } from "@/components/converted-cv-result";
 import {
   MAX_FILE_SIZE_MB,
   countryOptions,
@@ -33,8 +34,6 @@ export function ConvertForm() {
   const [apiResult, setApiResult] = useState<ConvertApiSuccess | null>(null);
   const [apiError, setApiError] = useState<ConvertApiError | null>(null);
   const requestAbortRef = useRef<AbortController | null>(null);
-  const structuredCv = apiResult?.structuredCv ?? null;
-  const detectedSectionsPreview = structuredCv?.detectedSections.slice(0, 6) ?? [];
 
   const isSubmitDisabled =
     country === "" ||
@@ -264,7 +263,7 @@ export function ConvertForm() {
           disabled={isSubmitDisabled}
           className="inline-flex w-full items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-soft hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
         >
-          {submissionState === "loading" ? "Preparing conversion..." : "Convert my CV"}
+          {submissionState === "loading" ? "Converting your CV..." : "Convert my CV"}
         </button>
 
         {submissionState === "loading" ? (
@@ -272,91 +271,12 @@ export function ConvertForm() {
             className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3"
             aria-live="polite"
           >
-            <p className="text-sm text-sky-800">
-              Validating, extracting, and structuring your CV for the next conversion step.
-            </p>
+            <p className="text-sm text-sky-800">Converting your CV...</p>
           </div>
         ) : null}
 
         {submissionState === "success" && apiResult ? (
-          <div
-            className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3"
-            aria-live="polite"
-          >
-            <p className="text-sm font-medium text-emerald-800">{apiResult.message}</p>
-            <div className="mt-3 grid gap-3 text-sm text-emerald-900 sm:grid-cols-2">
-              <div className="rounded-2xl bg-white/70 px-4 py-3">
-                <p className="font-semibold">Target country</p>
-                <p className="mt-1">{apiResult.countryLabel}</p>
-              </div>
-              <div className="rounded-2xl bg-white/70 px-4 py-3">
-                <p className="font-semibold">Conversion status</p>
-                <p className="mt-1">{apiResult.conversionStatus}</p>
-              </div>
-              <div className="rounded-2xl bg-white/70 px-4 py-3">
-                <p className="font-semibold">Extraction status</p>
-                <p className="mt-1">{apiResult.extractionStatus}</p>
-              </div>
-              <div className="rounded-2xl bg-white/70 px-4 py-3">
-                <p className="font-semibold">Extracted characters</p>
-                <p className="mt-1">{apiResult.extractedCharacterCount}</p>
-              </div>
-              <div className="rounded-2xl bg-white/70 px-4 py-3 sm:col-span-2">
-                <p className="font-semibold">File ready for next step</p>
-                <p className="mt-1 break-all">{apiResult.originalFileName}</p>
-              </div>
-            </div>
-            {structuredCv ? (
-              <div className="mt-3 rounded-2xl bg-white/70 px-4 py-3 text-sm text-emerald-900">
-                <p className="font-semibold">Structured data ready</p>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl bg-emerald-50 px-4 py-3">
-                    <p className="font-semibold">Mapping status</p>
-                    <p className="mt-1">{structuredCv.mappingStatus}</p>
-                  </div>
-                  <div className="rounded-2xl bg-emerald-50 px-4 py-3">
-                    <p className="font-semibold">Identity signals</p>
-                    <p className="mt-1">
-                      Name: {structuredCv.fullName ? "found" : "not found"} | Email:{" "}
-                      {structuredCv.email ? "found" : "not found"} | Phone:{" "}
-                      {structuredCv.phone ? "found" : "not found"}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-emerald-50 px-4 py-3">
-                    <p className="font-semibold">Entry counts</p>
-                    <p className="mt-1">
-                      Experience: {structuredCv.experience.length} | Education:{" "}
-                      {structuredCv.education.length} | Skills: {structuredCv.skills.length}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-emerald-50 px-4 py-3">
-                    <p className="font-semibold">Detected sections</p>
-                    <p className="mt-1">
-                      {detectedSectionsPreview.length > 0
-                        ? detectedSectionsPreview.join(", ")
-                        : "No clear sections were confidently identified yet."}
-                    </p>
-                  </div>
-                </div>
-                {structuredCv.mappingWarnings.length > 0 ? (
-                  <p className="mt-3 text-sm text-emerald-800">
-                    Mapper note: {structuredCv.mappingWarnings[0]}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-            <div className="mt-3 rounded-2xl bg-white/70 px-4 py-3 text-sm text-emerald-900">
-              <p className="font-semibold">Extracted text preview</p>
-              <p className="mt-1">{apiResult.extractedTextPreview}</p>
-            </div>
-            <div className="mt-3 rounded-2xl bg-white/70 px-4 py-3 text-sm text-emerald-900">
-              <p className="font-semibold">What happens next</p>
-              <p className="mt-1">
-                The raw text and mapped CV structure are now ready for prompt building and
-                country-specific rewriting in the next backend step.
-              </p>
-            </div>
-          </div>
+          <ConvertedCvResult result={apiResult} />
         ) : null}
 
         {submissionState === "error" && apiError ? (
