@@ -87,6 +87,15 @@ const styles = StyleSheet.create({
   },
   skillLine: {
     marginBottom: 4
+  },
+  watermark: {
+    bottom: 18,
+    color: "#94a3b8",
+    fontSize: 8.5,
+    left: 42,
+    position: "absolute",
+    right: 42,
+    textAlign: "center"
   }
 });
 
@@ -94,6 +103,7 @@ interface ConvertedCvPdfDocumentProps {
   convertedCv: ConvertedCvData;
   countryLabel: string;
   outputLanguageLabel: string;
+  watermarkText?: string;
 }
 
 function PdfSection({
@@ -203,7 +213,8 @@ function PdfExperienceSection({
 export function ConvertedCvPdfDocument({
   convertedCv,
   countryLabel,
-  outputLanguageLabel
+  outputLanguageLabel,
+  watermarkText
 }: ConvertedCvPdfDocumentProps) {
   const contactItems = convertedCv.contactLineItems;
 
@@ -247,6 +258,8 @@ export function ConvertedCvPdfDocument({
             />
           ) : null
         )}
+
+        {watermarkText ? <Text style={styles.watermark}>{watermarkText}</Text> : null}
       </Page>
     </Document>
   );

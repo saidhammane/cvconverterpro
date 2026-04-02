@@ -1,196 +1,118 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { pdf } from "@react-pdf/renderer";
+
+import type { ConversionResult } from "@/lib/cv-converter/types";
+import { ConvertedCvPdfDocument } from "@/components/converted-cv-pdf-document";
 import { ConvertedCvPreview } from "@/components/converted-cv-preview";
-import type { ConvertApiSuccess, CountryValue, OutputLanguageValue } from "@/lib/convert";
-
-function formatExtraSectionsPreview(extraSections: ConvertApiSuccess["convertedCv"]["extraSections"]): string {
-  const titles = extraSections.slice(0, 3).map((section) => section.title);
-
-  if (titles.length === 0) {
-    return "No extra sections were added in this draft.";
-  }
-
-  return titles.join(", ");
-}
-
-function sanitizeFilenamePart(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40);
-}
-
-function buildPdfFileName(
-  country: CountryValue,
-  outputLanguage: OutputLanguageValue,
-  candidateName: string
-): string {
-  const countryPart = sanitizeFilenamePart(country) || "country";
-  const languagePart = sanitizeFilenamePart(outputLanguage) || "language";
-  const namePart = sanitizeFilenamePart(candidateName);
-
-  return namePart.length > 0
-    ? `cvconverterpro-${countryPart}-${languagePart}-${namePart}-converted-cv.pdf`
-    : `cvconverterpro-${countryPart}-${languagePart}-converted-cv.pdf`;
-}
 
 interface ConvertedCvResultProps {
-  result: ConvertApiSuccess;
+  result: ConversionResult;
 }
 
 export function ConvertedCvResult({ result }: ConvertedCvResultProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+
   const structuredCv = result.structuredCv;
-  const convertedCv = result.convertedCv;
-  const detectedSectionsPreview = structuredCv.detectedSections.slice(0, 6);
+  const normalizedEmail = email.trim();
+  const isValidEmail = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail), [normalizedEmail]);
 
   const handleDownloadPdf = async () => {
-    setIsDownloading(true);
-    setDownloadError(null);
+    if (!isValidEmail) {
+      setDownloadError("Please enter a valid email before downloading.");
+      return;
+    }
 
     try {
-      const [{ pdf }, { ConvertedCvPdfDocument }] = await Promise.all([
-        import("@react-pdf/renderer"),
-        import("@/components/converted-cv-pdf-document")
-      ]);
+      setIsDownloading(true);
+      setDownloadError(null);
 
       const blob = await pdf(
         <ConvertedCvPdfDocument
-          convertedCv={convertedCv}
+          convertedCv={structuredCv.convertedCv}
           countryLabel={result.countryLabel}
           outputLanguageLabel={result.outputLanguageLabel}
+          watermarkText="Converted by CVConverterPro"
         />
       ).toBlob();
 
-      if (blob.size === 0) {
-        throw new Error("Generated PDF blob was empty.");
-      }
-
-      const objectUrl = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-
-      link.href = objectUrl;
-      link.download = buildPdfFileName(
-        result.country,
-        result.outputLanguage,
-        convertedCv.name
-      );
+      link.href = url;
+      link.download = `cvconverterpro-${structuredCv.targetCountry.toLowerCase()}-${structuredCv.outputLanguage.toLowerCase()}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
-      URL.revokeObjectURL(objectUrl);
+      URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("PDF export error:", error);
-      setDownloadError("We could not generate the PDF right now. Please try again.");
+      console.error(error);
+      setDownloadError("Failed to generate PDF. Please try again.");
     } finally {
       setIsDownloading(false);
     }
   };
 
   return (
-    <div
-      className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3"
-      aria-live="polite"
-    >
-      <p className="text-sm font-medium text-emerald-800">{result.message}</p>
-
-      <div className="mt-3 grid gap-3 text-sm text-emerald-900 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-2xl bg-white/70 px-4 py-3">
-          <p className="font-semibold">Target country</p>
-          <p className="mt-1">{result.countryLabel}</p>
-        </div>
-        <div className="rounded-2xl bg-white/70 px-4 py-3">
-          <p className="font-semibold">Output language</p>
-          <p className="mt-1">{result.outputLanguageLabel}</p>
-        </div>
-        <div className="rounded-2xl bg-white/70 px-4 py-3">
-          <p className="font-semibold">Conversion status</p>
-          <p className="mt-1">{result.conversionStatus}</p>
-        </div>
-        <div className="rounded-2xl bg-white/70 px-4 py-3">
-          <p className="font-semibold">Extraction status</p>
-          <p className="mt-1">{result.extractionStatus}</p>
-        </div>
-        <div className="rounded-2xl bg-white/70 px-4 py-3">
-          <p className="font-semibold">Extracted characters</p>
-          <p className="mt-1">{result.extractedCharacterCount}</p>
-        </div>
-        {result.sourceLanguage ? (
-          <div className="rounded-2xl bg-white/70 px-4 py-3">
-            <p className="font-semibold">Source language</p>
-            <p className="mt-1">{result.sourceLanguage}</p>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="mt-3 rounded-2xl bg-white/70 px-4 py-4 text-sm text-emerald-950">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="font-semibold">Converted CV preview</p>
-            <p className="mt-1 text-sm text-emerald-800">
-              Cleaned for rendering and export with deduplicated contact details, normalized text, and a final {result.outputLanguageLabel.toLowerCase()} output.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleDownloadPdf}
-            disabled={isDownloading}
-            className="inline-flex items-center justify-center rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
-          >
-            {isDownloading ? "Preparing PDF..." : "Download PDF"}
-          </button>
-        </div>
-        <div className="mt-4">
-          <ConvertedCvPreview convertedCv={convertedCv} />
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl bg-emerald-50 px-4 py-3">
-            <p className="font-semibold">Header cleanup</p>
-            <p className="mt-1 text-emerald-900">
-              {convertedCv.contactLineItems.length > 0
-                ? `${convertedCv.contactLineItems.length} unique contact items`
-                : "No contact line items were available."}
-            </p>
-          </div>
-          <div className="rounded-2xl bg-emerald-50 px-4 py-3">
-            <p className="font-semibold">Section depth</p>
-            <p className="mt-1 text-emerald-900">
-              Experience: {convertedCv.experience.length} | Education: {convertedCv.education.length}
-            </p>
-          </div>
-          <div className="rounded-2xl bg-emerald-50 px-4 py-3">
-            <p className="font-semibold">Extra sections</p>
-            <p className="mt-1 text-emerald-900">
-              {formatExtraSectionsPreview(convertedCv.extraSections)}
-            </p>
-          </div>
-        </div>
-
-        {downloadError ? (
-          <p className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            {downloadError}
+    <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+            Converted CV ready
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Review the optimized version below, then enter your email to download the free watermarked PDF.
           </p>
-        ) : null}
+        </div>
+        <div className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700">
+          {result.countryLabel} · {result.outputLanguageLabel}
+        </div>
       </div>
 
-      <div className="mt-3 rounded-2xl bg-white/70 px-4 py-3 text-sm text-emerald-900">
-        <p className="font-semibold">Structured source signals</p>
-        <p className="mt-1">
-          Name: {structuredCv.fullName ? "found" : "not found"} | Email:{" "}
-          {structuredCv.email ? "found" : "not found"} | Phone:{" "}
-          {structuredCv.phone ? "found" : "not found"}
-        </p>
-        <p className="mt-1">
-          Detected sections:{" "}
-          {detectedSectionsPreview.length > 0
-            ? detectedSectionsPreview.join(", ")
-            : "No clear sections were confidently identified yet."}
-        </p>
+      <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <div className="space-y-2">
+          <label htmlFor="download-email" className="block text-sm font-medium text-slate-700">
+            Enter your email before downloading
+          </label>
+          <input
+            id="download-email"
+            type="email"
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              if (downloadError) setDownloadError(null);
+            }}
+            placeholder="you@example.com"
+            className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none ring-0 transition placeholder:text-slate-400 focus:border-emerald-400"
+          />
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+            <span>{isValidEmail ? "Valid email" : "Email required to unlock PDF download"}</span>
+            <span>Free PDF includes watermark: Converted by CVConverterPro</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleDownloadPdf}
+          disabled={isDownloading || !isValidEmail}
+          className="inline-flex min-h-12 items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+        >
+          {isDownloading ? "Preparing PDF..." : "Download PDF"}
+        </button>
       </div>
-    </div>
+
+      {downloadError ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {downloadError}
+        </div>
+      ) : null}
+
+      <ConvertedCvPreview
+        convertedCv={structuredCv.convertedCv}
+        countryLabel={result.countryLabel}
+        outputLanguageLabel={result.outputLanguageLabel}
+      />
+    </section>
   );
 }
