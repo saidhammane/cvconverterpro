@@ -3,12 +3,12 @@
 import { useMemo, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
 
-import type { ConversionResult } from "@/lib/cv-converter/types";
+import type { ConvertApiSuccess } from "@/lib/convert";
 import { ConvertedCvPdfDocument } from "@/components/converted-cv-pdf-document";
-import { ConvertedCvPreview } from "@/components/converted-cv-preview";
+import { BeforeAfterComparison } from "@/components/before-after-comparison";
 
 interface ConvertedCvResultProps {
-  result: ConversionResult;
+  result: ConvertApiSuccess;
 }
 
 export function ConvertedCvResult({ result }: ConvertedCvResultProps) {
@@ -16,9 +16,10 @@ export function ConvertedCvResult({ result }: ConvertedCvResultProps) {
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
 
-  const structuredCv = result.structuredCv;
+  const convertedCv = result.convertedCv;
   const normalizedEmail = email.trim();
   const isValidEmail = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail), [normalizedEmail]);
+  const atsScore = convertedCv.atsScore ?? 0;
 
   const handleDownloadPdf = async () => {
     if (!isValidEmail) {
@@ -32,7 +33,7 @@ export function ConvertedCvResult({ result }: ConvertedCvResultProps) {
 
       const blob = await pdf(
         <ConvertedCvPdfDocument
-          convertedCv={structuredCv.convertedCv}
+          convertedCv={convertedCv}
           countryLabel={result.countryLabel}
           outputLanguageLabel={result.outputLanguageLabel}
           watermarkText="Converted by CVConverterPro"
@@ -42,7 +43,7 @@ export function ConvertedCvResult({ result }: ConvertedCvResultProps) {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `cvconverterpro-${structuredCv.targetCountry.toLowerCase()}-${structuredCv.outputLanguage.toLowerCase()}.pdf`;
+      link.download = `cvconverterpro-${result.country.toLowerCase()}-${result.outputLanguage.toLowerCase()}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -67,7 +68,7 @@ export function ConvertedCvResult({ result }: ConvertedCvResultProps) {
           </p>
         </div>
         <div className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700">
-          {result.countryLabel} · {result.outputLanguageLabel}
+          {result.countryLabel} - {result.outputLanguageLabel}
         </div>
       </div>
 
@@ -108,8 +109,61 @@ export function ConvertedCvResult({ result }: ConvertedCvResultProps) {
         </div>
       ) : null}
 
-      <ConvertedCvPreview
-        convertedCv={structuredCv.convertedCv}
+      <section className="rounded-2xl border border-slate-200 bg-slate-50/70 px-5 py-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">ATS Feedback</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Lightweight ATS-style feedback to highlight what is strong and what to improve.
+            </p>
+          </div>
+          <div className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
+            Score: {atsScore}/100
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+            <p className="text-sm font-semibold text-emerald-800">Strengths</p>
+            <ul className="mt-3 space-y-2 text-sm text-emerald-900">
+              {convertedCv.atsStrengths.map((item) => (
+                <li key={item} className="flex gap-2">
+                  <span className="mt-[5px] h-2 w-2 rounded-full bg-emerald-500" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+            <p className="text-sm font-semibold text-amber-800">Weaknesses</p>
+            <ul className="mt-3 space-y-2 text-sm text-amber-900">
+              {convertedCv.atsWeaknesses.map((item) => (
+                <li key={item} className="flex gap-2">
+                  <span className="mt-[5px] h-2 w-2 rounded-full bg-amber-500" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+            <p className="text-sm font-semibold text-slate-900">Suggestions</p>
+            <ul className="mt-3 space-y-2 text-sm text-slate-700">
+              {convertedCv.atsFeedback.map((item) => (
+                <li key={item} className="flex gap-2">
+                  <span className="mt-[5px] h-2 w-2 rounded-full bg-slate-400" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <BeforeAfterComparison
+        extractedTextPreview={result.extractedTextPreview}
+        convertedCv={convertedCv}
         countryLabel={result.countryLabel}
         outputLanguageLabel={result.outputLanguageLabel}
       />

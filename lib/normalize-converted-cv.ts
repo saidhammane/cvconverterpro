@@ -513,6 +513,18 @@ function normalizeContact(contact: ConvertedCvStructuredContact): ConvertedCvStr
   };
 }
 
+function clampAtsScore(value: number): number {
+  if (Number.isNaN(value)) {
+    return 0;
+  }
+
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+function normalizeAtsList(values: string[]): string[] {
+  return dedupeStrings(values.map((value) => repairTextArtifacts(value))).slice(0, 4);
+}
+
 export function normalizeConvertedCv({
   convertedCv,
   structuredCv,
@@ -534,6 +546,10 @@ export function normalizeConvertedCv({
     skills: normalizeSkills(convertedCv.skills).length > 0
       ? normalizeSkills(convertedCv.skills)
       : normalizeSkills(structuredCv.skills),
-    extraSections: normalizeExtraSections(convertedCv.extraSections, structuredCv, targetCountry)
+    extraSections: normalizeExtraSections(convertedCv.extraSections, structuredCv, targetCountry),
+    atsScore: clampAtsScore(convertedCv.atsScore),
+    atsFeedback: normalizeAtsList(convertedCv.atsFeedback),
+    atsStrengths: normalizeAtsList(convertedCv.atsStrengths),
+    atsWeaknesses: normalizeAtsList(convertedCv.atsWeaknesses)
   };
 }

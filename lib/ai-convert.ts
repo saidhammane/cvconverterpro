@@ -103,6 +103,7 @@ function buildSystemPrompt(
     "Use concise, recruiter-friendly phrasing and polished bullet wording where helpful.",
     "Avoid repeating the same email, phone number, or location in multiple places.",
     "If information is missing, leave the string empty or the array empty instead of guessing.",
+    "Provide a lightweight ATS feedback score and concise suggestions without inventing missing information.",
     canadaSpecificInstruction,
     "Return only the structured response defined by the schema."
   ]
@@ -144,6 +145,11 @@ function buildUserPrompt({
     `- write every heading, sentence, bullet, and label in ${getOutputLanguageLabel(outputLanguage)} only.`,
     "- keep the final CV ATS-friendly and professionally readable in the requested language.",
     "- do not repeat contact information in the headline, summary, or section content.",
+    "- atsScore: provide a numeric score from 0 to 100 for ATS friendliness.",
+    "- atsStrengths: list 2 to 3 concise strengths.",
+    "- atsWeaknesses: list 2 to 3 concise weaknesses.",
+    "- atsFeedback: list 2 to 3 short, actionable suggestions.",
+    "- keep ATS feedback realistic, concise, and grounded in the source CV.",
     "- extraSections: only include truthful sections such as Projects, Certifications, or Languages when supported by the source text."
   ].join("\n");
 }

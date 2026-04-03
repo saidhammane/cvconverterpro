@@ -5,7 +5,7 @@ import type { ConvertedCvData, ConvertedCvExperience } from "@/lib/convert";
 import { formatExperienceHeading } from "@/lib/format-converted-cv";
 
 interface ConvertedCvPreviewProps {
-  convertedCv: ConvertedCvData;
+  convertedCv?: ConvertedCvData | null;
 }
 
 function PreviewSection({
@@ -70,7 +70,7 @@ function ExperienceList({
             <ul className="space-y-2">
               {experience.bullets.map((bullet) => (
                 <li key={`${heading}-${bullet}`} className="flex gap-3 text-slate-700">
-                  <span className="mt-[1px] text-slate-950">•</span>
+                  <span className="mt-[1px] text-slate-950">-</span>
                   <span>{bullet}</span>
                 </li>
               ))}
@@ -83,6 +83,14 @@ function ExperienceList({
 }
 
 export function ConvertedCvPreview({ convertedCv }: ConvertedCvPreviewProps) {
+  if (!convertedCv) {
+    return (
+      <div className="rounded-[2rem] border border-slate-200 bg-white px-6 py-7 text-sm leading-7 text-slate-600 shadow-soft sm:px-8 sm:py-9">
+        Converted CV preview will appear here after a successful conversion.
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-[2rem] border border-slate-200 bg-white px-6 py-7 text-sm leading-7 text-slate-800 shadow-soft sm:px-8 sm:py-9">
       <header className="border-b border-slate-200 pb-6">

@@ -40,7 +40,11 @@ export const convertedCvSchema = z
     experience: z.array(convertedCvExperienceSchema),
     education: z.array(z.string()),
     skills: z.array(z.string()),
-    extraSections: z.array(convertedCvExtraSectionSchema)
+    extraSections: z.array(convertedCvExtraSectionSchema),
+    atsScore: z.number().min(0).max(100),
+    atsFeedback: z.array(z.string()),
+    atsStrengths: z.array(z.string()),
+    atsWeaknesses: z.array(z.string())
   })
   .strict();
 

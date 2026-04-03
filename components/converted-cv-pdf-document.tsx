@@ -165,7 +165,7 @@ function PdfExperienceList({
             <Text style={styles.entryHeading}>{heading}</Text>
             {experience.bullets.map((bullet, bulletIndex) => (
               <View key={`${heading}-${bulletIndex}`} style={styles.bulletRow}>
-                <Text style={styles.bulletMarker}>•</Text>
+                <Text style={styles.bulletMarker}>-</Text>
                 <Text style={styles.bulletText}>{bullet}</Text>
               </View>
             ))}
